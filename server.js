@@ -1,18 +1,28 @@
+// --- SERVER BOHONGAN AGAR RENDER.COM TIDAK MEMATIKAN BOT ---
+const http = require('http');
+http.createServer((req, res) => {
+    res.writeHead(200, { 'Content-Type': 'text/plain' });
+    res.end('Bot TikTok Doodle MMO Aktif dan Berjalan!\n');
+}).listen(process.env.PORT || 3000, () => {
+    console.log('Server dummy web berjalan...');
+});
+// -----------------------------------------------------------
+
 const { WebcastPushConnection } = require('tiktok-live-connector');
 const Ably = require('ably');
 
-// API Key Ably dan Channel kamu
+// 1. Konfigurasi Ably (Jembatan ke Game Kamu)
 const ably = new Ably.Realtime('4opURQ.FVPiqg:z5W8zQxWoBNlXmlAXvOv4Bz1bmn_ISnFucJGpjFijS8');
 const channel = ably.channels.get('doodle-mmo-ultimate-v20');
 
-// Username TikTok kamu
+// 2. Username TikTok kamu (tanpa @)
 const tiktokUsername = "karisyonoo"; 
 
 let tiktokLiveConnection = new WebcastPushConnection(tiktokUsername);
 
-console.log(`Menghubungkan ke live @${tiktokUsername}...`);
+console.log(`Mencoba menghubungkan ke live @${tiktokUsername}...`);
 
-// 1. Tangkap Chat
+// --- LISTENER: TANGKAP CHAT ---
 tiktokLiveConnection.on('chat', data => {
     console.log(`[CHAT] ${data.uniqueId}: ${data.comment}`);
     channel.publish('tiktok-event', {
@@ -22,9 +32,9 @@ tiktokLiveConnection.on('chat', data => {
     });
 });
 
-// 2. Tangkap Gift
+// --- LISTENER: TANGKAP GIFT ---
 tiktokLiveConnection.on('gift', data => {
-    // Tunggu sampai animasi combo selesai biar nggak spam
+    // Abaikan jika gift combo (beruntun) belum selesai agar tidak spam
     if (data.giftType === 1 && !data.repeatEnd) return; 
     
     console.log(`[GIFT] ${data.uniqueId} mengirim ${data.giftName}`);
@@ -35,17 +45,18 @@ tiktokLiveConnection.on('gift', data => {
     });
 });
 
-// 3. Tangkap Like (Tap-tap layar)
+// --- LISTENER: TANGKAP LIKE (TAP LAYAR) ---
 tiktokLiveConnection.on('like', data => {
+    console.log(`[LIKE] ${data.uniqueId} tap-tap layar!`);
     channel.publish('tiktok-event', {
         type: 'like',
         username: data.uniqueId
     });
 });
 
-// Mulai koneksi
+// --- MULAI KONEKSI KE TIKTOK ---
 tiktokLiveConnection.connect().then(state => {
     console.info(`✅ Berhasil terhubung ke Live TikTok ${tiktokUsername}! (Room ID: ${state.roomId})`);
 }).catch(err => {
-    console.error('❌ Gagal terhubung. Pastikan kamu sedang Live!', err);
+    console.error('❌ Gagal terhubung. Pastikan kamu sedang memulai Live di aplikasi TikTok saat ini!', err.message);
 });
